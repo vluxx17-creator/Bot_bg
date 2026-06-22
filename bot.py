@@ -41,7 +41,6 @@ cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")]
 ])
 
-# --- Вспомогательные функции (без изменений) ---
 def clean_phone(raw: str) -> str:
     digits = re.sub(r'\D', '', raw)
     if len(digits) == 11 and digits[0] in ('7', '8'):
@@ -139,7 +138,6 @@ async def search_by_phone(phone: str) -> str:
             return "\n".join(lines)
     return "❌ Номер не найден"
 
-# --- Команды Telegram ---
 @dp.message(Command("build_index"))
 async def cmd_build_index(message: Message):
     if message.from_user.id != ADMIN_ID:
@@ -221,7 +219,6 @@ async def process_phone(message: Message, state: FSMContext):
     result = await search_by_phone(phone)
     await message.answer(result, reply_markup=main_kb)
 
-# --- Простой HTTP-сервер для health-check ---
 async def health_check(request):
     return web.Response(text="OK")
 
@@ -236,7 +233,6 @@ async def run_web_server():
 
 async def main():
     await load_mappings()
-    # Запускаем веб-сервер и поллинг параллельно
     await asyncio.gather(
         run_web_server(),
         dp.start_polling(bot)
