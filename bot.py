@@ -1,13 +1,16 @@
+m
 import asyncio
 import csv
 import io
 import json
 import os
 import re
-from io import BytesIO
+import tempfile
+from pathlib import Path
 from aiohttp import web
 
 import aiohttp
+import gdown
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
@@ -23,7 +26,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
 FILE_MAP_URL = os.getenv("FILE_MAP_URL", "")
 INDEX_URL = os.getenv("INDEX_URL", "")
 
-GDOWN_TEMPLATE = "https://drive.google.com/uc?export=download&id={file_id}"
+GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"  # gdown сам обработает подтверждение
 
 file_map = {}
 phone_index = {}
@@ -69,28 +72,24 @@ async def load_mappings():
             phone_index = idx
     print(f"Загружено {len(file_map)} файлов, {len(phone_index)} префиксов")
 
-async def stream_search_in_file(file_url: str, phone_clean: str) -> dict | None:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(file_url) as resp:
-            if resp.status != 200:
-                return None
-            buffer = ""
-            async for chunk in resp.content.iter_chunked(1024*64):
-                text = chunk.decode("utf-8", errors="ignore")
-                buffer += text
-                lines = buffer.split("\n")
-                buffer = lines.pop()
-                for line in lines:
-                    if phone_clean in line:
-                        delimiter = "\t" if "\t" in line else ","
-                        reader = csv.reader(io.StringIO(line), quotechar='"', delimiter=delimiter)
-                        for row in reader:
-                            for cell in row:
-                                if clean_phone(cell) == phone_clean:
-                                    return parse_row(row)
-            if buffer and phone_clean in buffer:
-                delimiter = "\t" if "\t" in buffer else ","
-                reader = csv.reader(io.StringIO(buffer), quotechar='"', delimiter=delimiter)
+def download_file_from_drive(file_id: str) -> Path:
+    """Скачивает файл с Google Диска во временную папку, возвращает путь к файлу"""
+    url = GDOWN_TEMPLATE.format(file_id=file_id)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+        tmp_path = Path(tmp.name)
+    gdown.download(url, str(tmp_path), quiet=True)
+    if tmp_path.stat().st_size == 0:
+        tmp_path.unlink(missing_ok=True)
+        return None
+    return tmp_path
+
+def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
+    """Ищет номер в скачанном файле, возвращает словарь или None"""
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            if phone_clean in line:
+                delimiter = "\t" if "\t" in line else ","
+                reader = csv.reader(io.StringIO(line), quotechar='"', delimiter=delimiter)
                 for row in reader:
                     for cell in row:
                         if clean_phone(cell) == phone_clean:
@@ -121,8 +120,13 @@ async def search_by_phone(phone: str) -> str:
         file_id = file_map.get(fname)
         if not file_id:
             continue
-        file_url = GDOWN_TEMPLATE.format(file_id=file_id)
-        result = await stream_search_in_file(file_url, clean)
+        # Скачиваем файл через gdown
+        file_path = download_file_from_drive(file_id)
+        if not file_path:
+            continue
+        result = search_in_file(file_path, clean)
+        # Удаляем временный файл
+        file_path.unlink(missing_ok=True)
         if result:
             lines = [f"📱 Номер: {phone}"]
             name = f"{result.get('first_name','')} {result.get('last_name','')}".strip()
@@ -149,32 +153,15 @@ async def cmd_build_index(message: Message):
     processed = 0
     errors = []
     for fname, file_id in file_map.items():
-        file_url = GDOWN_TEMPLATE.format(file_id=file_id)
+        file_path = download_file_from_drive(file_id)
+        if not file_path:
+            errors.append(f"{fname}: не удалось скачать")
+            continue
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(file_url) as resp:
-                    if resp.status != 200:
-                        errors.append(f"{fname}: HTTP {resp.status}")
-                        continue
-                    buffer = ""
-                    async for chunk in resp.content.iter_chunked(1024*64):
-                        text = chunk.decode("utf-8", errors="ignore")
-                        buffer += text
-                        lines = buffer.split("\n")
-                        buffer = lines.pop()
-                        for line in lines:
-                            if line.strip():
-                                digits = re.findall(r'\d+', line)
-                                for d in digits:
-                                    cleaned = clean_phone(d)
-                                    if len(cleaned) >= 10:
-                                        prefix = cleaned[:3]
-                                        if prefix not in new_index:
-                                            new_index[prefix] = []
-                                        if fname not in new_index[prefix]:
-                                            new_index[prefix].append(fname)
-                    if buffer.strip():
-                        digits = re.findall(r'\d+', buffer)
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if line.strip():
+                        digits = re.findall(r'\d+', line)
                         for d in digits:
                             cleaned = clean_phone(d)
                             if len(cleaned) >= 10:
@@ -186,6 +173,8 @@ async def cmd_build_index(message: Message):
             processed += 1
         except Exception as e:
             errors.append(f"{fname}: {e}")
+        finally:
+            file_path.unlink(missing_ok=True)
     index_json = json.dumps(new_index, ensure_ascii=False, indent=2)
     bio = BytesIO(index_json.encode('utf-8'))
     bio.name = "index.json"
@@ -193,7 +182,7 @@ async def cmd_build_index(message: Message):
     if errors:
         caption += f"\nОшибок: {len(errors)}"
     await message.answer_document(FSInputFile(bio), caption=caption)
-    await message.answer("⚠️ Загрузи этот index.json на Google Диск, получи прямую ссылку и укажи её в переменной INDEX_URL на Render, затем перезапусти бота.")
+    await message.answer("⚠️ Загрузи этот index.json на GitHub Gist (как и file_map.json), получи raw-ссылку и укажи её в переменной INDEX_URL на Render, затем перезапусти бота.")
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
@@ -219,6 +208,7 @@ async def process_phone(message: Message, state: FSMContext):
     result = await search_by_phone(phone)
     await message.answer(result, reply_markup=main_kb)
 
+# Health-check сервер для Render
 async def health_check(request):
     return web.Response(text="OK")
 
@@ -227,9 +217,10 @@ async def run_web_server():
     app.router.add_get("/", health_check)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"Health-сервер запущен на порту {os.environ.get('PORT', 10000)}")
+    print(f"Health-сервер запущен на порту {port}")
 
 async def main():
     await load_mappings()
