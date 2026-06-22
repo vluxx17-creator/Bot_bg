@@ -90,4 +90,3 @@ jobs:
         with:
           name: phone-index-v3
           path: index.json
-    
