@@ -22,10 +22,10 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
-FILE_MAP_URL = os.getenv("FILE_MAP_URL", "https://gist.githubusercontent.com/vluxx17-creator/743a7f3bf86fc2e35a88bdbee2c6771f/raw/2edbca8d5da11e3fe46a173dd097117985edf4d3/gistfile1.txt")
+FILE_MAP_URL = os.getenv("FILE_MAP_URL", "https://github.com/vluxx17-creator/Bot_bg/raw/refs/heads/main/file_map.json")
 INDEX_URL = os.getenv("INDEX_URL", "")
 
-GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
+GDOWN_TEMPLATE = "https://github.com/vluxx17-creator/Bot_bg/raw/refs/heads/main/file_map.json"
 
 file_map = {}
 phone_index = {}
