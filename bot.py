@@ -22,7 +22,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
-FILE_MAP_URL = os.getenv("FILE_MAP_URL", "")
+FILE_MAP_URL = os.getenv("FILE_MAP_URL", "https://gist.githubusercontent.com/vluxx17-creator/743a7f3bf86fc2e35a88bdbee2c6771f/raw/2edbca8d5da11e3fe46a173dd097117985edf4d3/gistfile1.txt")
 INDEX_URL = os.getenv("INDEX_URL", "")
 
 GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
@@ -61,8 +61,10 @@ async def download_json(url: str) -> dict | None:
 
 async def load_mappings():
     global file_map, phone_index
+    print(f"FILE_MAP_URL = {FILE_MAP_URL}")
     if FILE_MAP_URL:
         fm = await download_json(FILE_MAP_URL)
+        print(f"download_json result: {fm}")
         if fm:
             file_map = fm
     if INDEX_URL:
