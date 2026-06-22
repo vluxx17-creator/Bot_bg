@@ -77,6 +77,13 @@ jobs:
           with open('index.json', 'w', encoding='utf-8') as out:
               json.dump(new_index, out, ensure_ascii=False, indent=2)
           print(f'Index built with {len(new_index)} prefixes')
+
+          # Выводим первые 500 строк и последние 500 строк индекса в лог
+          with open('index.json', 'r') as f:
+              data = f.read()
+          print('--- BEGIN INDEX JSON ---')
+          print(data)
+          print('--- END INDEX JSON ---')
           "
 
       - name: Upload index as artifact
