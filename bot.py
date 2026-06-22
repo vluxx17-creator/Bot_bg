@@ -7,6 +7,7 @@ import re
 import tempfile
 from pathlib import Path
 from aiohttp import web
+from concurrent.futures import ThreadPoolExecutor
 
 import aiohttp
 import gdown
@@ -22,22 +23,20 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
-# FILE_MAP_URL больше не используется, словарь встроен ниже
-INDEX_URL = os.getenv("INDEX_URL", "")  # пока пусто
+INDEX_URL = os.getenv("INDEX_URL", "")
 
 GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
 
-# ВСТРОЕННЫЙ FILE_MAP – никаких загрузок!
 FILE_MAP = {
-  "school_1.csv": "1N-sJV5GR5I-thsH9mjOAgPhyO8VYk29k",
-  "school_3.csv": "1342Gl23P314oisuCn1hyAT2kXzpJ4L_i",
-  "school_6.csv": "16bAziCf56Ykaw1njC2oVTXSFCoIhLyi_",
-  "gosuslugi_1.csv": "1oqDrFeQLo6cou96I7S9h4FQ8ILUW4yd3",
-  "moscow_1.txt": "1rkoXdEiX47BVuDJTqGyEfaLEgl5W5Q49",
-  "Telegram_1.csv": "1gPxZxtv0WzJQB2wbPrSW9dp7cAzRQLMw",
-  "Telegram_2.txt": "1CbYkhEMyChN_61qpa_szxumB6JtBBqGn",
-  "Telegram_3.txt": "1rgq5ABpH2p3PoIBLYh5T980rYCrPYJMB",
-  "Telegram_4.txt": "1Li4LjlbwxK5dOAUyp87U9AQe_CtDpnqv"
+    "school_1.csv": "1N-sJV5GR5I-thsH9mjOAgPhyO8VYk29k",
+    "school_3.csv": "1342Gl23P314oisuCn1hyAT2kXzpJ4L_i",
+    "school_6.csv": "16bAziCf56Ykaw1njC2oVTXSFCoIhLyi_",
+    "gosuslugi_1.csv": "1oqDrFeQLo6cou96I7S9h4FQ8ILUW4yd3",
+    "moscow_1.txt": "1rkoXdEiX47BVuDJTqGyEfaLEgl5W5Q49",
+    "Telegram_1.csv": "1gPxZxtv0WzJQB2wbPrSW9dp7cAzRQLMw",
+    "Telegram_2.txt": "1CbYkhEMyChN_61qpa_szxumB6JtBBqGn",
+    "Telegram_3.txt": "1rgq5ABpH2p3PoIBLYh5T980rYCrPYJMB",
+    "Telegram_4.txt": "1Li4LjlbwxK5dOAUyp87U9AQe_CtDpnqv"
 }
 
 phone_index = {}
@@ -54,6 +53,9 @@ main_kb = InlineKeyboardMarkup(inline_keyboard=[
 cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")]
 ])
+
+# Пул потоков для фоновых задач
+executor = ThreadPoolExecutor(max_workers=2)
 
 def clean_phone(raw: str) -> str:
     digits = re.sub(r'\D', '', raw)
@@ -83,17 +85,34 @@ async def load_index():
     else:
         print("INDEX_URL не задан, индекс не загружен")
 
-def download_file_from_drive(file_id: str) -> Path:
+def _download_file_sync(file_id: str) -> Path | None:
+    """Синхронная загрузка файла с Google Диска (выполняется в потоке)"""
     url = GDOWN_TEMPLATE.format(file_id=file_id)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
         tmp_path = Path(tmp.name)
-    gdown.download(url, str(tmp_path), quiet=True)
-    if tmp_path.stat().st_size == 0:
+    try:
+        gdown.download(url, str(tmp_path), quiet=True)
+        if tmp_path.stat().st_size == 0:
+            tmp_path.unlink(missing_ok=True)
+            return None
+        return tmp_path
+    except Exception:
         tmp_path.unlink(missing_ok=True)
         return None
-    return tmp_path
 
-def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
+async def download_file_from_drive(file_id: str) -> Path | None:
+    """Асинхронная обёртка над _download_file_sync с таймаутом"""
+    try:
+        return await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(executor, _download_file_sync, file_id),
+            timeout=300  # 5 минут на файл
+        )
+    except asyncio.TimeoutError:
+        print(f"Таймаут загрузки файла {file_id}")
+        return None
+
+def _search_in_file_sync(file_path: Path, phone_clean: str) -> dict | None:
+    """Синхронный поиск в файле (выполняется в потоке)"""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             if phone_clean in line:
@@ -104,6 +123,10 @@ def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
                         if clean_phone(cell) == phone_clean:
                             return parse_row(row)
     return None
+
+async def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
+    """Асинхронная обёртка поиска в файле"""
+    return await asyncio.get_event_loop().run_in_executor(executor, _search_in_file_sync, file_path, phone_clean)
 
 def parse_row(row: list) -> dict:
     if len(row) >= 5:
@@ -129,11 +152,12 @@ async def search_by_phone(phone: str) -> str:
         file_id = FILE_MAP.get(fname)
         if not file_id:
             continue
-        file_path = download_file_from_drive(file_id)
+        file_path = await download_file_from_drive(file_id)
         if not file_path:
             continue
-        result = search_in_file(file_path, clean)
-        file_path.unlink(missing_ok=True)
+        result = await search_in_file(file_path, clean)
+        # Удаляем файл в фоне
+        asyncio.create_task(delete_file_async(file_path))
         if result:
             lines = [f"📱 Номер: {phone}"]
             name = f"{result.get('first_name','')} {result.get('last_name','')}".strip()
@@ -149,37 +173,61 @@ async def search_by_phone(phone: str) -> str:
             return "\n".join(lines)
     return "❌ Номер не найден"
 
+async def delete_file_async(file_path: Path):
+    """Удаление файла в потоке, чтобы не блокировать event loop"""
+    await asyncio.get_event_loop().run_in_executor(executor, file_path.unlink, True)
+
 @dp.message(Command("build_index"))
 async def cmd_build_index(message: Message):
     if message.from_user.id != ADMIN_ID:
         return await message.answer("⛔ Доступ запрещён")
-    await message.answer("⏳ Начинаю построение индекса. Это может занять несколько минут...")
+    await message.answer("⏳ Начинаю построение индекса. Это займёт время (возможно, 10-20 минут). Пожалуйста, не прерывайте.")
     new_index = {}
     processed = 0
     errors = []
+    # Чтобы health-check не убил процесс, запускаем индексацию в фоне и периодически обновляем статус
     for fname, file_id in FILE_MAP.items():
-        file_path = download_file_from_drive(file_id)
+        file_path = await download_file_from_drive(file_id)
         if not file_path:
             errors.append(f"{fname}: не удалось скачать")
             continue
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if line.strip():
-                        digits = re.findall(r'\d+', line)
-                        for d in digits:
-                            cleaned = clean_phone(d)
-                            if len(cleaned) >= 10:
-                                prefix = cleaned[:3]
-                                if prefix not in new_index:
-                                    new_index[prefix] = []
-                                if fname not in new_index[prefix]:
-                                    new_index[prefix].append(fname)
+            # Читаем файл асинхронно (в потоке)
+            def _process_file(fp):
+                """Функция, выполняемая в потоке для индексации файла"""
+                local_index = {}
+                with open(fp, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        if line.strip():
+                            digits = re.findall(r'\d+', line)
+                            for d in digits:
+                                cleaned = clean_phone(d)
+                                if len(cleaned) >= 10:
+                                    prefix = cleaned[:3]
+                                    if prefix not in local_index:
+                                        local_index[prefix] = set()
+                                    local_index[prefix].add(fname)
+                return local_index
+            local_index = await asyncio.get_event_loop().run_in_executor(executor, _process_file, file_path)
+            # Объединяем в общий индекс
+            for prefix, names in local_index.items():
+                if prefix not in new_index:
+                    new_index[prefix] = []
+                for name in names:
+                    if name not in new_index[prefix]:
+                        new_index[prefix].append(name)
             processed += 1
         except Exception as e:
             errors.append(f"{fname}: {e}")
         finally:
-            file_path.unlink(missing_ok=True)
+            await delete_file_async(file_path)
+        # Даем event loop обработать другие задачи (например, health-check)
+        await asyncio.sleep(0.1)
+
+    if not new_index and errors:
+        await message.answer(f"❌ Не удалось построить индекс. Ошибки: {', '.join(errors[:5])}")
+        return
+
     index_json = json.dumps(new_index, ensure_ascii=False, indent=2)
     bio = BytesIO(index_json.encode('utf-8'))
     bio.name = "index.json"
@@ -187,10 +235,7 @@ async def cmd_build_index(message: Message):
     if errors:
         caption += f"\nОшибок: {len(errors)}"
     await message.answer_document(FSInputFile(bio), caption=caption)
-    # Сохраняем индекс в файл, который можно зашить в код позже
-    with open("index.json", "w", encoding="utf-8") as f:
-        f.write(index_json)
-    await message.answer("⚠️ Скачай index.json из ответа выше и пришли его мне, я помогу зашить в код.")
+    await message.answer("⚠️ Отправь этот файл мне, я зашью его в код бота.")
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
@@ -216,6 +261,7 @@ async def process_phone(message: Message, state: FSMContext):
     result = await search_by_phone(phone)
     await message.answer(result, reply_markup=main_kb)
 
+# Health-check веб-сервер
 async def health_check(request):
     return web.Response(text="OK")
 
