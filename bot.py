@@ -5,6 +5,7 @@ import json
 import os
 import re
 from io import BytesIO
+from aiohttp import web
 
 import aiohttp
 from aiogram import Bot, Dispatcher, types, F
@@ -40,6 +41,7 @@ cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")]
 ])
 
+# --- Вспомогательные функции (без изменений) ---
 def clean_phone(raw: str) -> str:
     digits = re.sub(r'\D', '', raw)
     if len(digits) == 11 and digits[0] in ('7', '8'):
@@ -50,7 +52,10 @@ async def download_json(url: str) -> dict | None:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             if resp.status == 200:
-                return await resp.json()
+                try:
+                    return await resp.json()
+                except Exception:
+                    return None
     return None
 
 async def load_mappings():
@@ -134,6 +139,7 @@ async def search_by_phone(phone: str) -> str:
             return "\n".join(lines)
     return "❌ Номер не найден"
 
+# --- Команды Telegram ---
 @dp.message(Command("build_index"))
 async def cmd_build_index(message: Message):
     if message.from_user.id != ADMIN_ID:
@@ -215,9 +221,26 @@ async def process_phone(message: Message, state: FSMContext):
     result = await search_by_phone(phone)
     await message.answer(result, reply_markup=main_kb)
 
+# --- Простой HTTP-сервер для health-check ---
+async def health_check(request):
+    return web.Response(text="OK")
+
+async def run_web_server():
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", 10000)))
+    await site.start()
+    print(f"Health-сервер запущен на порту {os.environ.get('PORT', 10000)}")
+
 async def main():
     await load_mappings()
-    await dp.start_polling(bot)
+    # Запускаем веб-сервер и поллинг параллельно
+    await asyncio.gather(
+        run_web_server(),
+        dp.start_polling(bot)
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
