@@ -8,9 +8,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,14 +50,12 @@ jobs:
               url = f'https://drive.google.com/uc?export=download&confirm=no_antivirus&id={file_id}'
               dest = Path(fname)
               print(f'Downloading {fname}...')
-              # Используем curl с обработкой редиректов и cookies
               ret = subprocess.run([
                   'curl', '-L', '-b', '/tmp/cookies.txt', '-c', '/tmp/cookies.txt',
                   '-o', str(dest), url
               ], capture_output=True, text=True)
               if ret.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
                   print(f'Failed to download {fname}, trying alternative method...')
-                  # Альтернативная ссылка без confirm=no_antivirus
                   url2 = f'https://drive.google.com/uc?export=download&id={file_id}'
                   subprocess.run(['curl', '-L', '-b', '/tmp/cookies.txt', '-c', '/tmp/cookies.txt', '-o', str(dest), url2])
                   if not dest.exists() or dest.stat().st_size == 0:
@@ -86,3 +88,5 @@ jobs:
           git add index.json
           git commit -m "Auto-generated index.json" || echo "No changes to commit"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
