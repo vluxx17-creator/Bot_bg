@@ -1,0 +1,80 @@
+name: Build Index
+
+on:
+  workflow_dispatch:  # позволит запускать вручную
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install gdown
+
+      - name: Download files and build index
+        run: |
+          python -c "
+          import csv, json, re, os
+          import gdown
+          from pathlib import Path
+
+          file_map = {
+              'school_1.csv': '1N-sJV5GR5I-thsH9mjOAgPhyO8VYk29k',
+              'school_3.csv': '1342Gl23P314oisuCn1hyAT2kXzpJ4L_i',
+              'school_6.csv': '16bAziCf56Ykaw1njC2oVTXSFCoIhLyi_',
+              'gosuslugi_1.csv': '1oqDrFeQLo6cou96I7S9h4FQ8ILUW4yd3',
+              'moscow_1.txt': '1rkoXdEiX47BVuDJTqGyEfaLEgl5W5Q49',
+              'Telegram_1.csv': '1gPxZxtv0WzJQB2wbPrSW9dp7cAzRQLMw',
+              'Telegram_2.txt': '1CbYkhEMyChN_61qpa_szxumB6JtBBqGn',
+              'Telegram_3.txt': '1rgq5ABpH2p3PoIBLYh5T980rYCrPYJMB',
+              'Telegram_4.txt': '1Li4LjlbwxK5dOAUyp87U9AQe_CtDpnqv'
+          }
+
+          def clean_phone(raw):
+              digits = re.sub(r'\D', '', raw)
+              if len(digits) == 11 and digits[0] in ('7', '8'):
+                  return digits[1:]
+              return digits
+
+          new_index = {}
+          for fname, file_id in file_map.items():
+              url = f'https://drive.google.com/uc?id={file_id}'
+              dest = Path(fname)
+              print(f'Downloading {fname}...')
+              gdown.download(url, str(dest), quiet=False)
+              if not dest.exists() or dest.stat().st_size == 0:
+                  print(f'Failed to download {fname}, skipping')
+                  continue
+              print(f'Processing {fname}...')
+              with open(dest, 'r', encoding='utf-8', errors='ignore') as f:
+                  for line in f:
+                      if line.strip():
+                          digits = re.findall(r'\d+', line)
+                          for d in digits:
+                              cleaned = clean_phone(d)
+                              if len(cleaned) >= 10:
+                                  prefix = cleaned[:3]
+                                  if prefix not in new_index:
+                                      new_index[prefix] = []
+                                  if fname not in new_index[prefix]:
+                                      new_index[prefix].append(fname)
+              # Удаляем файл после обработки
+              os.remove(dest)
+
+          with open('index.json', 'w', encoding='utf-8') as out:
+              json.dump(new_index, out, ensure_ascii=False, indent=2)
+          print(f'Index built with {len(new_index)} prefixes')
+          "
+
+      - name: Upload index as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: index
+          path: index.json
