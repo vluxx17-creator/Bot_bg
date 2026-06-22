@@ -2,3 +2,4 @@ aiogram>=3.0
 aiohttp
 python-dotenv
 Pillow
+gdown
