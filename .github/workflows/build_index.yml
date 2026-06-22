@@ -3,7 +3,7 @@ name: Build Index
 on:
   push:
     paths:
-      - 'start_build.txt'   # запустится, когда ты изменишь этот файл
+      - 'start_build.txt'
 
 jobs:
   build:
@@ -17,14 +17,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install gdown
-
-      - name: Download files and build index
+      - name: Download files via curl and build index
         run: |
           python -c "
-          import csv, json, re, os
-          import gdown
+          import csv, json, re, os, subprocess
           from pathlib import Path
 
           file_map = {
@@ -47,13 +43,22 @@ jobs:
 
           new_index = {}
           for fname, file_id in file_map.items():
-              url = f'https://drive.google.com/uc?id={file_id}'
+              url = f'https://drive.google.com/uc?export=download&confirm=no_antivirus&id={file_id}'
               dest = Path(fname)
               print(f'Downloading {fname}...')
-              gdown.download(url, str(dest), quiet=False)
-              if not dest.exists() or dest.stat().st_size == 0:
-                  print(f'Failed to download {fname}, skipping')
-                  continue
+              # Используем curl с обработкой редиректов и cookies
+              ret = subprocess.run([
+                  'curl', '-L', '-b', '/tmp/cookies.txt', '-c', '/tmp/cookies.txt',
+                  '-o', str(dest), url
+              ], capture_output=True, text=True)
+              if ret.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
+                  print(f'Failed to download {fname}, trying alternative method...')
+                  # Альтернативная ссылка без confirm=no_antivirus
+                  url2 = f'https://drive.google.com/uc?export=download&id={file_id}'
+                  subprocess.run(['curl', '-L', '-b', '/tmp/cookies.txt', '-c', '/tmp/cookies.txt', '-o', str(dest), url2])
+                  if not dest.exists() or dest.stat().st_size == 0:
+                      print(f'Still failed, skipping {fname}')
+                      continue
               print(f'Processing {fname}...')
               with open(dest, 'r', encoding='utf-8', errors='ignore') as f:
                   for line in f:
