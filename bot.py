@@ -22,12 +22,24 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
-FILE_MAP_URL = os.getenv("FILE_MAP_URL", "https://github.com/vluxx17-creator/Bot_bg/raw/refs/heads/main/file_map.json")
-INDEX_URL = os.getenv("INDEX_URL", "")
+# FILE_MAP_URL больше не используется, словарь встроен ниже
+INDEX_URL = os.getenv("INDEX_URL", "")  # пока пусто
 
-GDOWN_TEMPLATE = "https://github.com/vluxx17-creator/Bot_bg/raw/refs/heads/main/file_map.json"
+GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
 
-file_map = {}
+# ВСТРОЕННЫЙ FILE_MAP – никаких загрузок!
+FILE_MAP = {
+  "school_1.csv": "1N-sJV5GR5I-thsH9mjOAgPhyO8VYk29k",
+  "school_3.csv": "1342Gl23P314oisuCn1hyAT2kXzpJ4L_i",
+  "school_6.csv": "16bAziCf56Ykaw1njC2oVTXSFCoIhLyi_",
+  "gosuslugi_1.csv": "1oqDrFeQLo6cou96I7S9h4FQ8ILUW4yd3",
+  "moscow_1.txt": "1rkoXdEiX47BVuDJTqGyEfaLEgl5W5Q49",
+  "Telegram_1.csv": "1gPxZxtv0WzJQB2wbPrSW9dp7cAzRQLMw",
+  "Telegram_2.txt": "1CbYkhEMyChN_61qpa_szxumB6JtBBqGn",
+  "Telegram_3.txt": "1rgq5ABpH2p3PoIBLYh5T980rYCrPYJMB",
+  "Telegram_4.txt": "1Li4LjlbwxK5dOAUyp87U9AQe_CtDpnqv"
+}
+
 phone_index = {}
 
 bot = Bot(token=BOT_TOKEN)
@@ -59,19 +71,17 @@ async def download_json(url: str) -> dict | None:
                     return None
     return None
 
-async def load_mappings():
-    global file_map, phone_index
-    print(f"FILE_MAP_URL = {FILE_MAP_URL}")
-    if FILE_MAP_URL:
-        fm = await download_json(FILE_MAP_URL)
-        print(f"download_json result: {fm}")
-        if fm:
-            file_map = fm
+async def load_index():
+    global phone_index
     if INDEX_URL:
         idx = await download_json(INDEX_URL)
         if idx:
             phone_index = idx
-    print(f"Загружено {len(file_map)} файлов, {len(phone_index)} префиксов")
+            print(f"Индекс загружен, {len(phone_index)} префиксов")
+        else:
+            print("Не удалось загрузить индекс")
+    else:
+        print("INDEX_URL не задан, индекс не загружен")
 
 def download_file_from_drive(file_id: str) -> Path:
     url = GDOWN_TEMPLATE.format(file_id=file_id)
@@ -116,7 +126,7 @@ async def search_by_phone(phone: str) -> str:
         return "❌ Номер не найден в индексе"
     file_names = phone_index[prefix]
     for fname in file_names:
-        file_id = file_map.get(fname)
+        file_id = FILE_MAP.get(fname)
         if not file_id:
             continue
         file_path = download_file_from_drive(file_id)
@@ -143,13 +153,11 @@ async def search_by_phone(phone: str) -> str:
 async def cmd_build_index(message: Message):
     if message.from_user.id != ADMIN_ID:
         return await message.answer("⛔ Доступ запрещён")
-    if not file_map:
-        return await message.answer("❌ Не загружен file_map.json. Проверьте FILE_MAP_URL.")
     await message.answer("⏳ Начинаю построение индекса. Это может занять несколько минут...")
     new_index = {}
     processed = 0
     errors = []
-    for fname, file_id in file_map.items():
+    for fname, file_id in FILE_MAP.items():
         file_path = download_file_from_drive(file_id)
         if not file_path:
             errors.append(f"{fname}: не удалось скачать")
@@ -179,7 +187,10 @@ async def cmd_build_index(message: Message):
     if errors:
         caption += f"\nОшибок: {len(errors)}"
     await message.answer_document(FSInputFile(bio), caption=caption)
-    await message.answer("⚠️ Загрузи этот index.json на GitHub Gist (как и file_map.json), получи raw-ссылку и укажи её в переменной INDEX_URL на Render, затем перезапусти бота.")
+    # Сохраняем индекс в файл, который можно зашить в код позже
+    with open("index.json", "w", encoding="utf-8") as f:
+        f.write(index_json)
+    await message.answer("⚠️ Скачай index.json из ответа выше и пришли его мне, я помогу зашить в код.")
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
@@ -219,7 +230,7 @@ async def run_web_server():
     print(f"Health-сервер запущен на порту {port}")
 
 async def main():
-    await load_mappings()
+    await load_index()
     await asyncio.gather(
         run_web_server(),
         dp.start_polling(bot)
