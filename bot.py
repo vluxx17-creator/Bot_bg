@@ -1,4 +1,3 @@
-m
 import asyncio
 import csv
 import io
@@ -26,7 +25,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
 FILE_MAP_URL = os.getenv("FILE_MAP_URL", "")
 INDEX_URL = os.getenv("INDEX_URL", "")
 
-GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"  # gdown сам обработает подтверждение
+GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
 
 file_map = {}
 phone_index = {}
@@ -73,7 +72,6 @@ async def load_mappings():
     print(f"Загружено {len(file_map)} файлов, {len(phone_index)} префиксов")
 
 def download_file_from_drive(file_id: str) -> Path:
-    """Скачивает файл с Google Диска во временную папку, возвращает путь к файлу"""
     url = GDOWN_TEMPLATE.format(file_id=file_id)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
         tmp_path = Path(tmp.name)
@@ -84,7 +82,6 @@ def download_file_from_drive(file_id: str) -> Path:
     return tmp_path
 
 def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
-    """Ищет номер в скачанном файле, возвращает словарь или None"""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             if phone_clean in line:
@@ -120,12 +117,10 @@ async def search_by_phone(phone: str) -> str:
         file_id = file_map.get(fname)
         if not file_id:
             continue
-        # Скачиваем файл через gdown
         file_path = download_file_from_drive(file_id)
         if not file_path:
             continue
         result = search_in_file(file_path, clean)
-        # Удаляем временный файл
         file_path.unlink(missing_ok=True)
         if result:
             lines = [f"📱 Номер: {phone}"]
@@ -208,7 +203,6 @@ async def process_phone(message: Message, state: FSMContext):
     result = await search_by_phone(phone)
     await message.answer(result, reply_markup=main_kb)
 
-# Health-check сервер для Render
 async def health_check(request):
     return web.Response(text="OK")
 
