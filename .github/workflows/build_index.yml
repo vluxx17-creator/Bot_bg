@@ -1,4 +1,4 @@
-name: Build Index
+name: Build Index (v2 – all files)
 
 on:
   push:
@@ -38,12 +38,15 @@ jobs:
           }
 
           def clean_phone(raw):
+              # Удаляем всё, кроме цифр
               digits = re.sub(r'\D', '', raw)
+              # Приводим к 10-11 цифрам
               if len(digits) == 11 and digits[0] in ('7', '8'):
                   return digits[1:]
               return digits
 
           new_index = {}
+          stats = {}
           for fname, file_id in file_map.items():
               url = f'https://drive.google.com/uc?export=download&confirm=no_antivirus&id={file_id}'
               dest = Path(fname)
@@ -53,41 +56,44 @@ jobs:
                   '-o', str(dest), url
               ], capture_output=True, text=True)
               if ret.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
-                  print(f'Failed to download {fname}, trying alternative...')
+                  print(f'WARNING: {fname} download failed, trying alternative...')
                   url2 = f'https://drive.google.com/uc?export=download&id={file_id}'
                   subprocess.run(['curl', '-L', '-b', '/tmp/cookies.txt', '-c', '/tmp/cookies.txt', '-o', str(dest), url2])
                   if not dest.exists() or dest.stat().st_size == 0:
-                      print(f'Skipping {fname}')
+                      print(f'SKIPPING {fname} (cannot download)')
                       continue
-              print(f'Processing {fname}...')
+              phone_count = 0
               with open(dest, 'r', encoding='utf-8', errors='ignore') as f:
                   for line in f:
                       if line.strip():
-                          digits = re.findall(r'\d+', line)
-                          for d in digits:
+                          # Ищем все потенциальные номера в строке
+                          digits_list = re.findall(r'[\d\s\(\)\-]+', line)
+                          for d in digits_list:
                               cleaned = clean_phone(d)
-                              if len(cleaned) >= 10:
+                              if len(cleaned) >= 10:   # минимум 10 цифр
                                   prefix = cleaned[:3]
                                   if prefix not in new_index:
                                       new_index[prefix] = []
                                   if fname not in new_index[prefix]:
                                       new_index[prefix].append(fname)
+                                  phone_count += 1
               os.remove(dest)
+              stats[fname] = phone_count
+              print(f'{fname}: found {phone_count} phone numbers')
 
           with open('index.json', 'w', encoding='utf-8') as out:
               json.dump(new_index, out, ensure_ascii=False, indent=2)
-          print(f'Index built with {len(new_index)} prefixes')
-
-          # Выводим индекс в лог (если понадобится скопировать)
-          with open('index.json', 'r') as f:
-              data = f.read()
+          print('--- STATS ---')
+          for k, v in stats.items():
+              print(f'{k}: {v} numbers')
           print('--- BEGIN INDEX JSON ---')
-          print(data)
+          with open('index.json', 'r') as f:
+              print(f.read())
           print('--- END INDEX JSON ---')
           "
 
       - name: Upload index as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: phone-index
+          name: phone-index-v2
           path: index.json
