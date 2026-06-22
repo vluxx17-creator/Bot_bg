@@ -9,10 +9,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -77,17 +79,15 @@ jobs:
           with open('index.json', 'w', encoding='utf-8') as out:
               json.dump(new_index, out, ensure_ascii=False, indent=2)
           print(f'Index built with {len(new_index)} prefixes')
-
-          # Выводим первые 500 строк и последние 500 строк индекса в лог
-          with open('index.json', 'r') as f:
-              data = f.read()
-          print('--- BEGIN INDEX JSON ---')
-          print(data)
-          print('--- END INDEX JSON ---')
           "
 
-      - name: Upload index as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: phone-index
-          path: index.json
+      - name: Commit index.json to repository
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git pull --rebase origin main
+          git add index.json
+          git commit -m "Auto-generated index.json" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
