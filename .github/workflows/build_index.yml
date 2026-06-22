@@ -1,4 +1,4 @@
-name: Build Index (v2 – all files)
+name: Build Index (final)
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Download files via curl and build index
+      - name: Download files and build index
         run: |
           python -c "
           import csv, json, re, os, subprocess
@@ -38,15 +38,12 @@ jobs:
           }
 
           def clean_phone(raw):
-              # Удаляем всё, кроме цифр
               digits = re.sub(r'\D', '', raw)
-              # Приводим к 10-11 цифрам
               if len(digits) == 11 and digits[0] in ('7', '8'):
                   return digits[1:]
               return digits
 
           new_index = {}
-          stats = {}
           for fname, file_id in file_map.items():
               url = f'https://drive.google.com/uc?export=download&confirm=no_antivirus&id={file_id}'
               dest = Path(fname)
@@ -66,11 +63,10 @@ jobs:
               with open(dest, 'r', encoding='utf-8', errors='ignore') as f:
                   for line in f:
                       if line.strip():
-                          # Ищем все потенциальные номера в строке
                           digits_list = re.findall(r'[\d\s\(\)\-]+', line)
                           for d in digits_list:
                               cleaned = clean_phone(d)
-                              if len(cleaned) >= 10:   # минимум 10 цифр
+                              if len(cleaned) >= 10:
                                   prefix = cleaned[:3]
                                   if prefix not in new_index:
                                       new_index[prefix] = []
@@ -78,14 +74,10 @@ jobs:
                                       new_index[prefix].append(fname)
                                   phone_count += 1
               os.remove(dest)
-              stats[fname] = phone_count
               print(f'{fname}: found {phone_count} phone numbers')
 
           with open('index.json', 'w', encoding='utf-8') as out:
               json.dump(new_index, out, ensure_ascii=False, indent=2)
-          print('--- STATS ---')
-          for k, v in stats.items():
-              print(f'{k}: {v} numbers')
           print('--- BEGIN INDEX JSON ---')
           with open('index.json', 'r') as f:
               print(f.read())
@@ -93,7 +85,9 @@ jobs:
           "
 
       - name: Upload index as artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phone-index-v2
+          name: phone-index-v3
           path: index.json
+    
