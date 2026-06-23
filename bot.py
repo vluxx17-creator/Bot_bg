@@ -23,10 +23,17 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
+CHANNEL_USERNAME = "@lpdmv"  # замени, если нужно
+
+# API-ключи (заполни в Render Environment)
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "")
+VK_TOKEN = os.getenv("VK_API_TOKEN", "")
+TONCENTER_KEY = os.getenv("TONCENTER_API_KEY", "")
+GOOGLE_VISION_KEY = os.getenv("GOOGLE_VISION_API_KEY", "")
 
 GDOWN_TEMPLATE = "https://drive.google.com/uc?id={file_id}"
 
-# Вшитый file_map (без загрузок)
+# File map (без изменений)
 FILE_MAP = {
     "Telegram_1.csv": "1gPxZxtv0WzJQB2wbPrSW9dp7cAzRQLMw",
     "Telegram_2.txt": "1CbYkhEMyChN_61qpa_szxumB6JtBBqGn",
@@ -39,8 +46,10 @@ FILE_MAP = {
     "moscow_1.txt": "1rkoXdEiX47BVuDJTqGyEfaLEgl5W5Q49"
 }
 
-# Вшитый индекс
+# НОВЫЙ ИНДЕКС (вставлен весь)
 PHONE_INDEX = {
+  "936": ["school_3.csv", "Telegram_1.csv"],
+  "400": ["school_6.csv"],
   "380": ["Telegram_1.csv"],
   "925": ["Telegram_1.csv"],
   "375": ["Telegram_1.csv"],
@@ -154,10 +163,12 @@ PHONE_INDEX = {
   "771": ["Telegram_1.csv","Telegram_2.txt"],
   "639": ["Telegram_1.csv"],
   "992": ["Telegram_1.csv"],
+  "068": ["Telegram_1.csv"],
   "436": ["Telegram_1.csv"],
   "336": ["Telegram_1.csv"],
   "939": ["Telegram_1.csv"],
   "152": ["Telegram_1.csv","Telegram_2.txt"],
+  "067": ["Telegram_1.csv"],
   "171": ["Telegram_1.csv","Telegram_2.txt"],
   "165": ["Telegram_1.csv","Telegram_2.txt"],
   "386": ["Telegram_1.csv"],
@@ -170,6 +181,7 @@ PHONE_INDEX = {
   "991": ["Telegram_1.csv"],
   "359": ["Telegram_1.csv"],
   "164": ["Telegram_1.csv","Telegram_2.txt"],
+  "097": ["Telegram_1.csv"],
   "178": ["Telegram_1.csv"],
   "668": ["Telegram_1.csv"],
   "126": ["Telegram_1.csv","Telegram_2.txt"],
@@ -179,8 +191,6 @@ PHONE_INDEX = {
   "407": ["Telegram_1.csv"],
   "381": ["Telegram_1.csv"],
   "467": ["Telegram_1.csv"],
-  "936": ["Telegram_1.csv"],
-  "067": ["Telegram_1.csv"],
   "356": ["Telegram_1.csv"],
   "172": ["Telegram_1.csv"],
   "001": ["Telegram_1.csv"],
@@ -200,7 +210,6 @@ PHONE_INDEX = {
   "192": ["Telegram_1.csv"],
   "706": ["Telegram_1.csv","Telegram_2.txt"],
   "278": ["Telegram_1.csv"],
-  "097": ["Telegram_1.csv"],
   "190": ["Telegram_1.csv"],
   "486": ["Telegram_1.csv"],
   "050": ["Telegram_1.csv"],
@@ -212,7 +221,6 @@ PHONE_INDEX = {
   "185": ["Telegram_1.csv","Telegram_2.txt"],
   "181": ["Telegram_1.csv","Telegram_2.txt"],
   "195": ["Telegram_1.csv"],
-  "068": ["Telegram_1.csv"],
   "408": ["Telegram_1.csv"],
   "199": ["Telegram_1.csv"],
   "096": ["Telegram_1.csv"],
@@ -224,7 +232,7 @@ PHONE_INDEX = {
   "363": ["Telegram_1.csv"],
   "421": ["Telegram_1.csv"],
   "186": ["Telegram_1.csv"],
-  "123": ["Telegram_1.csv","Telegram_2.txt"],
+  "123": ["Telegram_1.csv","Telegram_2.txt","Telegram_3.txt"],
   "162": ["Telegram_1.csv","Telegram_2.txt"],
   "888": ["Telegram_1.csv"],
   "573": ["Telegram_1.csv"],
@@ -238,6 +246,7 @@ PHONE_INDEX = {
   "642": ["Telegram_1.csv"],
   "362": ["Telegram_1.csv"],
   "378": ["Telegram_1.csv"],
+  "ŰˇŰˇŰˇ": ["Telegram_1.csv"],
   "201": ["Telegram_1.csv"],
   "148": ["Telegram_1.csv","Telegram_2.txt"],
   "125": ["Telegram_1.csv","Telegram_2.txt"],
@@ -288,6 +297,7 @@ PHONE_INDEX = {
   "970": ["Telegram_1.csv"],
   "166": ["Telegram_1.csv","Telegram_2.txt"],
   "557": ["Telegram_1.csv"],
+  "836": ["Telegram_1.csv"],
   "071": ["Telegram_1.csv"],
   "187": ["Telegram_1.csv","Telegram_2.txt"],
   "167": ["Telegram_1.csv","Telegram_2.txt"],
@@ -322,6 +332,7 @@ PHONE_INDEX = {
   "277": ["Telegram_1.csv"],
   "627": ["Telegram_1.csv"],
   "100": ["Telegram_1.csv","Telegram_2.txt"],
+  "007": ["Telegram_1.csv"],
   "443": ["Telegram_1.csv"],
   "798": ["Telegram_1.csv"],
   "250": ["Telegram_1.csv"],
@@ -339,6 +350,7 @@ PHONE_INDEX = {
   "284": ["Telegram_1.csv"],
   "551": ["Telegram_1.csv"],
   "108": ["Telegram_1.csv","Telegram_2.txt"],
+  "559": ["Telegram_1.csv"],
   "507": ["Telegram_1.csv"],
   "109": ["Telegram_1.csv","Telegram_2.txt"],
   "271": ["Telegram_1.csv"],
@@ -357,7 +369,6 @@ PHONE_INDEX = {
   "251": ["Telegram_1.csv"],
   "119": ["Telegram_1.csv","Telegram_2.txt"],
   "230": ["Telegram_1.csv"],
-  "559": ["Telegram_1.csv"],
   "231": ["Telegram_1.csv"],
   "656": ["Telegram_1.csv"],
   "146": ["Telegram_1.csv","Telegram_2.txt"],
@@ -378,6 +389,7 @@ PHONE_INDEX = {
   "830": ["Telegram_1.csv"],
   "618": ["Telegram_1.csv"],
   "221": ["Telegram_1.csv"],
+  "269": ["Telegram_1.csv"],
   "525": ["Telegram_1.csv"],
   "892": ["Telegram_1.csv"],
   "137": ["Telegram_1.csv","Telegram_2.txt"],
@@ -411,6 +423,7 @@ PHONE_INDEX = {
   "495": ["Telegram_1.csv"],
   "153": ["Telegram_1.csv","Telegram_2.txt"],
   "898": ["Telegram_1.csv"],
+  "427": ["Telegram_1.csv"],
   "310": ["Telegram_1.csv"],
   "361": ["Telegram_1.csv"],
   "387": ["Telegram_1.csv"],
@@ -422,6 +435,7 @@ PHONE_INDEX = {
   "265": ["Telegram_1.csv"],
   "218": ["Telegram_1.csv"],
   "168": ["Telegram_1.csv","Telegram_2.txt"],
+  "đ˝đżđˇ": ["Telegram_1.csv"],
   "169": ["Telegram_1.csv"],
   "890": ["Telegram_1.csv"],
   "252": ["Telegram_1.csv","Telegram_2.txt"],
@@ -449,10 +463,22 @@ dp = Dispatcher(storage=MemoryStorage())
 
 class SearchStates(StatesGroup):
     waiting_for_phone = State()
+    waiting_for_username = State()
+    waiting_for_ip = State()
+    waiting_for_vk = State()
+    waiting_for_ton = State()
+    waiting_for_photo = State()
 
-main_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📱 Поиск по номеру телефона", callback_data="search_phone")]
-])
+def get_main_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📱 Поиск по номеру", callback_data="search_phone")],
+        [InlineKeyboardButton(text="👤 Поиск по юзернейму", callback_data="search_username")],
+        [InlineKeyboardButton(text="🌐 Поиск по IP", callback_data="search_ip")],
+        [InlineKeyboardButton(text="🆔 Поиск по VK", callback_data="search_vk")],
+        [InlineKeyboardButton(text="💎 TON кошелёк", callback_data="search_ton")],
+        [InlineKeyboardButton(text="🖼 Поиск по фото", callback_data="search_photo")],
+    ])
+
 cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")]
 ])
@@ -465,6 +491,27 @@ def clean_phone(raw: str) -> str:
         return digits[1:]
     return digits
 
+async def check_subscription(user_id: int) -> bool:
+    try:
+        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        return member.status in ("member", "administrator", "creator")
+    except:
+        return False
+
+def require_subscription(func):
+    async def wrapper(message: Message, *args, **kwargs):
+        if not await check_subscription(message.from_user.id):
+            await message.answer(
+                f"❌ Для использования бота подпишитесь на канал {CHANNEL_USERNAME}.",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📢 Подписаться", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")]
+                ])
+            )
+            return
+        return await func(message, *args, **kwargs)
+    return wrapper
+
+# Функции загрузки и поиска (оставлены без изменений)
 def _download_file_sync(file_id: str) -> Path | None:
     url = GDOWN_TEMPLATE.format(file_id=file_id)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
@@ -475,7 +522,7 @@ def _download_file_sync(file_id: str) -> Path | None:
             tmp_path.unlink(missing_ok=True)
             return None
         return tmp_path
-    except Exception:
+    except:
         tmp_path.unlink(missing_ok=True)
         return None
 
@@ -488,7 +535,7 @@ async def download_file_from_drive(file_id: str) -> Path | None:
     except asyncio.TimeoutError:
         return None
 
-def _search_in_file_sync(file_path: Path, phone_clean: str) -> dict | None:
+def _search_phone_in_file(file_path: Path, phone_clean: str) -> dict | None:
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             if phone_clean in line:
@@ -497,23 +544,50 @@ def _search_in_file_sync(file_path: Path, phone_clean: str) -> dict | None:
                 for row in reader:
                     for cell in row:
                         if clean_phone(cell) == phone_clean:
-                            return parse_row(row)
+                            return parse_full_row(row)
     return None
 
-async def search_in_file(file_path: Path, phone_clean: str) -> dict | None:
-    return await asyncio.get_event_loop().run_in_executor(executor, _search_in_file_sync, file_path, phone_clean)
+def _search_username_in_file(file_path: Path, username: str) -> dict | None:
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            if username.lower() in line.lower():
+                delimiter = "\t" if "\t" in line else ","
+                reader = csv.reader(io.StringIO(line), quotechar='"', delimiter=delimiter)
+                for row in reader:
+                    for cell in row:
+                        if cell.strip().lower() == username.lower():
+                            return parse_full_row(row)
+    return None
 
-def parse_row(row: list) -> dict:
-    if len(row) >= 5:
-        return {
-            "id": row[0] if row[0] != "NULL" else "",
-            "username": row[1] if row[1] != "NULL" else "",
-            "first_name": row[2].strip('"') if row[2] != "NULL" else "",
-            "last_name": row[3].strip('"') if len(row) > 3 and row[3] != "NULL" else "",
-            "phone": row[4] if len(row) > 4 else ""
-        }
-    else:
-        return {"raw": " | ".join(row)}
+async def search_phone_in_file(file_path: Path, phone_clean: str) -> dict | None:
+    return await asyncio.get_event_loop().run_in_executor(executor, _search_phone_in_file, file_path, phone_clean)
+
+async def search_username_in_file(file_path: Path, username: str) -> dict | None:
+    return await asyncio.get_event_loop().run_in_executor(executor, _search_username_in_file, file_path, username)
+
+def parse_full_row(row: list) -> dict:
+    result = {}
+    if len(row) >= 1: result["col0"] = row[0]
+    if len(row) >= 2: result["col1"] = row[1]
+    if len(row) >= 3: result["col2"] = row[2]
+    if len(row) >= 4: result["col3"] = row[3]
+    if len(row) >= 5: result["col4"] = row[4]
+    for i, val in enumerate(row):
+        result[f"col{i}"] = val
+    return result
+
+def format_result(phone: str, data: dict) -> str:
+    lines = [f"📱 Номер: {phone}" if phone else "👤 Юзернейм"]
+    if "col0" in data: lines.append(f"ID: {data['col0']}")
+    if "col1" in data: lines.append(f"Username: @{data['col1']}" if data['col1'] != "NULL" else "")
+    if "col2" in data: lines.append(f"Имя: {data['col2']}")
+    if "col3" in data: lines.append(f"Фамилия: {data['col3']}")
+    if "col4" in data: lines.append(f"Телефон: {data['col4']}")
+    lines = [l for l in lines if l and not l.endswith(": ")]
+    for k, v in data.items():
+        if k.startswith("col") and int(k[3:]) >= 5:
+            lines.append(f"{k}: {v}")
+    return "\n".join(lines) if lines else "❌ Данные не найдены"
 
 async def search_by_phone(phone: str) -> str:
     clean = clean_phone(phone)
@@ -530,50 +604,165 @@ async def search_by_phone(phone: str) -> str:
         file_path = await download_file_from_drive(file_id)
         if not file_path:
             continue
-        result = await search_in_file(file_path, clean)
+        result = await search_phone_in_file(file_path, clean)
         asyncio.create_task(delete_file_async(file_path))
         if result:
-            lines = [f"📱 Номер: {phone}"]
-            name = f"{result.get('first_name','')} {result.get('last_name','')}".strip()
-            if name:
-                lines.append(f"👤 Имя: {name}")
-            if result.get("username"):
-                lines.append(f"🆔 Telegram: @{result['username']}")
-            if result.get("id"):
-                lines.append(f"🔢 ID: {result['id']}")
-            if result.get("raw"):
-                lines.append(f"📋 Данные: {result['raw']}")
-            lines.append("🟢 Найдено в базе")
-            return "\n".join(lines)
+            return format_result(phone, result)
     return "❌ Номер не найден"
+
+async def search_by_username(username: str) -> str:
+    telegram_files = [f for f in FILE_MAP if f.startswith("Telegram_")]
+    for fname in telegram_files:
+        file_id = FILE_MAP[fname]
+        file_path = await download_file_from_drive(file_id)
+        if not file_path:
+            continue
+        result = await search_username_in_file(file_path, username)
+        asyncio.create_task(delete_file_async(file_path))
+        if result:
+            return format_result("", result)
+    return "❌ Юзернейм не найден"
 
 async def delete_file_async(file_path: Path):
     await asyncio.get_event_loop().run_in_executor(executor, file_path.unlink, True)
 
+# Обработчики команд
 @dp.message(Command("start"))
+@require_subscription
 async def cmd_start(message: Message):
-    await message.answer("🔍 Поиск по номеру телефона в большой базе данных.\nВыберите действие:", reply_markup=main_kb)
+    await message.answer("🔍 OSINT-бот. Выберите тип поиска:", reply_markup=get_main_kb())
 
 @dp.callback_query(F.data == "search_phone")
+@require_subscription
 async def ask_phone(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(SearchStates.waiting_for_phone)
-    await callback.message.answer("Введите номер телефона (с кодом страны или без):", reply_markup=cancel_kb)
+    await callback.message.answer("Введите номер телефона:", reply_markup=cancel_kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "search_username")
+@require_subscription
+async def ask_username(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(SearchStates.waiting_for_username)
+    await callback.message.answer("Введите юзернейм (без @):", reply_markup=cancel_kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "search_ip")
+@require_subscription
+async def ask_ip(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(SearchStates.waiting_for_ip)
+    await callback.message.answer("Введите IP-адрес:", reply_markup=cancel_kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "search_vk")
+@require_subscription
+async def ask_vk(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(SearchStates.waiting_for_vk)
+    await callback.message.answer("Введите ID или короткое имя VK:", reply_markup=cancel_kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "search_ton")
+@require_subscription
+async def ask_ton(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(SearchStates.waiting_for_ton)
+    await callback.message.answer("Введите адрес TON-кошелька:", reply_markup=cancel_kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "search_photo")
+@require_subscription
+async def ask_photo(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(SearchStates.waiting_for_photo)
+    await callback.message.answer("Отправьте фото для анализа:", reply_markup=cancel_kb)
     await callback.answer()
 
 @dp.callback_query(F.data == "cancel")
 async def cancel_search(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.answer("❌ Поиск отменён.", reply_markup=main_kb)
+    await callback.message.answer("❌ Отменено.", reply_markup=get_main_kb())
     await callback.answer()
 
 @dp.message(SearchStates.waiting_for_phone)
+@require_subscription
 async def process_phone(message: Message, state: FSMContext):
     phone = message.text.strip()
     await state.clear()
-    await message.answer("⏳ Ищу...")
+    msg = await message.answer("⏳ Ищу...")
     result = await search_by_phone(phone)
-    await message.answer(result, reply_markup=main_kb)
+    await msg.edit_text(result, reply_markup=get_main_kb())
 
+@dp.message(SearchStates.waiting_for_username)
+@require_subscription
+async def process_username(message: Message, state: FSMContext):
+    username = message.text.strip().lstrip('@')
+    await state.clear()
+    msg = await message.answer("⏳ Ищу...")
+    result = await search_by_username(username)
+    await msg.edit_text(result, reply_markup=get_main_kb())
+
+@dp.message(SearchStates.waiting_for_ip)
+@require_subscription
+async def process_ip(message: Message, state: FSMContext):
+    ip = message.text.strip()
+    await state.clear()
+    if not IPINFO_TOKEN: result = "❌ Не задан IPINFO_TOKEN"
+    else:
+        async with aiohttp.ClientSession() as session:
+            url = f"https://ipinfo.io/{ip}/json?token={IPINFO_TOKEN}"
+            async with session.get(url) as resp:
+                data = await resp.json()
+                result = (f"🌍 IP: {ip}\nГород: {data.get('city')}\nРегион: {data.get('region')}\nСтрана: {data.get('country')}\nПровайдер: {data.get('org')}")
+    await message.answer(result, reply_markup=get_main_kb())
+
+@dp.message(SearchStates.waiting_for_vk)
+@require_subscription
+async def process_vk(message: Message, state: FSMContext):
+    vk_id = message.text.strip()
+    await state.clear()
+    if not VK_TOKEN: result = "❌ Не задан VK_API_TOKEN"
+    else:
+        async with aiohttp.ClientSession() as session:
+            url = "https://api.vk.com/method/users.get"
+            params = {"user_ids": vk_id, "fields": "city,country,photo_max_orig", "access_token": VK_TOKEN, "v": "5.131"}
+            async with session.get(url, params=params) as resp:
+                d = await resp.json()
+                if "response" in d and d["response"]:
+                    u = d["response"][0]
+                    result = f"🆔 VK ID: {u['id']}\nИмя: {u['first_name']} {u['last_name']}\nСтрана: {u.get('country',{}).get('title','-')}\nГород: {u.get('city',{}).get('title','-')}\nФото: {u.get('photo_max_orig','нет')}"
+                else:
+                    result = "❌ Профиль не найден"
+    await message.answer(result, reply_markup=get_main_kb())
+
+@dp.message(SearchStates.waiting_for_ton)
+@require_subscription
+async def process_ton(message: Message, state: FSMContext):
+    address = message.text.strip()
+    await state.clear()
+    if not TONCENTER_KEY: result = "❌ Не задан TONCENTER_API_KEY"
+    else:
+        async with aiohttp.ClientSession() as session:
+            url = f"https://toncenter.com/api/v2/getAddressInformation?address={address}"
+            headers = {"X-API-Key": TONCENTER_KEY}
+            async with session.get(url, headers=headers) as resp:
+                d = await resp.json()
+                if d.get("ok"):
+                    info = d["result"]
+                    result = f"💰 Кошелёк: {address}\nБаланс: {int(info['balance'])/1e9:.2f} TON\nСтатус: {info['state']}\nТип: {'активный' if info['wallet'] else 'неактивный'}"
+                else:
+                    result = "❌ Ошибка проверки"
+    await message.answer(result, reply_markup=get_main_kb())
+
+@dp.message(SearchStates.waiting_for_photo, F.photo)
+@require_subscription
+async def process_photo(message: Message, state: FSMContext):
+    file = await bot.get_file(message.photo[-1].file_id)
+    buf = io.BytesIO()
+    await bot.download_file(file.file_path, buf)
+    image_bytes = buf.getvalue()
+    await state.clear()
+    if not GOOGLE_VISION_KEY: result = "❌ Не задан GOOGLE_VISION_API_KEY"
+    else: result = "🖼 Анализ фото... (демо)"
+    await message.answer(result, reply_markup=get_main_kb())
+
+# Health-check
 async def health_check(request):
     return web.Response(text="OK")
 
@@ -585,7 +774,6 @@ async def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"Health-сервер запущен на порту {port}")
 
 async def main():
     await asyncio.gather(
